@@ -23,18 +23,22 @@ def predict(data_type, seq_length, saved_model, image_shape, video_name, class_l
             class_limit=class_limit)
     
     # Extract the sample from the data.
-    sample = data.get_frames_by_filename(video_name, data_type)
+    #sample = data.get_frames_by_filename(video_name, data_type)
 
-    # Predict!
-    prediction = model.predict(np.expand_dims(sample, axis=0))
-    print(prediction)
-    data.print_class_from_prediction(np.squeeze(prediction, axis=0))
+    for X, y in data.frame_generator(2, 'test', "images"):
+        # Predict!
+        prediction = model.predict(X)
+        print(prediction)
+        data.print_class_from_prediction(prediction[0])
+        print()
+        data.print_class_from_prediction(prediction[1])
+        print('-------------------------')
 
 def main():
     # model can be one of lstm, lrcn, mlp, conv_3d, c3d.
-    model = 'lstm'
+    model = '3d_in_c'
     # Must be a weights file.
-    saved_model = 'data/checkpoints/lstm-features.026-0.239.hdf5'
+    saved_model = 'data/checkpoints/3d_in_c-images.047-0.018.hdf5'
     # Sequence length must match the lengh used during training.
     seq_length = 40
     # Limit must match that used during training.
@@ -56,6 +60,10 @@ def main():
     elif model in ['lstm', 'mlp']:
         data_type = 'features'
         image_shape = None
+    elif model in ['3d_in_c']:
+        data_type = 'images'
+        image_shape = (32, 32, seq_length)
+        seq_length = 16
     else:
         raise ValueError("Invalid model. See train.py for options.")
 

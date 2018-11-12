@@ -30,6 +30,12 @@ def threadsafe_generator(func):
         return threadsafe_iterator(func(*a, **kw))
     return gen
 
+def read_file(type):
+    with open(os.path.join('data', '{}.txt'.format(type)), 'r') as fin:
+        reader = csv.reader(fin)
+        return list(reader)
+
+
 class DataSet():
 
     def __init__(self, seq_length=40, class_limit=None, image_shape=(224, 224, 3)):
@@ -47,19 +53,24 @@ class DataSet():
         self.data = self.get_data()
 
         # Get the classes.
-        self.classes = self.get_classes()
+        self.classes = ['0','1'] #self.get_classes()
 
         # Now do some minor data cleaning.
-        self.data = self.clean_data()
+        #sylar self.data = self.clean_data()
 
         self.image_shape = image_shape
 
     @staticmethod
     def get_data():
         """Load our data from file."""
-        with open(os.path.join('data', 'data_file.csv'), 'r') as fin:
-            reader = csv.reader(fin)
-            data = list(reader)
+        # with open(os.path.join('data', 'data_file.csv'), 'r') as fin:
+        #     reader = csv.reader(fin)
+        #     data = list(reader)
+        data = dict()
+        data['0_test'] = read_file('0_test')
+        data['0_train'] = read_file('0_train')
+        data['1_train'] = read_file('1_train')
+        data['1_test'] = read_file('1_test')
 
         return data
 
@@ -156,30 +167,57 @@ class DataSet():
         data_type: 'features', 'images'
         """
         # Get the right dataset for the generator.
-        train, test = self.split_train_test()
-        data = train if train_test == 'train' else test
+        #train, test = self.split_train_test()
 
-        print("Creating %s generator with %d samples." % (train_test, len(data)))
+        chanel_3d = False if self.image_shape[2] == 3 else True
+        #TODO try shuffle
+        data = dict()
+        if train_test == 'train':
+            data['0'] = self.data['0_train'].copy()
+            data['1'] = self.data['1_train'].copy()
+        else:
+            data['0'] = self.data['0_test'].copy()
+            data['1'] = self.data['1_test'].copy()
+
+        print("Creating %s generator with %d samples." % (train_test, len(data['0'])+len(data['1'])))
+
+        current_pos0 = 0
+        current_pos1 = 0
+        step = 16
 
         while 1:
             X, y = [], []
-
             # Generate batch_size samples.
-            for _ in range(batch_size):
+            for i in range(batch_size):
                 # Reset to be safe.
                 sequence = None
+                sample = []
+
+                if len(data['0']) < current_pos0 + step or len(data['1']) < current_pos1 + step:
+                    current_pos0 = 0
+                    current_pos1 = 0
 
                 # Get a random sample.
-                sample = random.choice(data)
+
+                if i % 2 == 0:
+                    sample.extend(data['0'][current_pos0:current_pos0 + step])
+                    current_pos0 = current_pos0 + step
+                else:
+                    sample.extend(data['1'][current_pos1:current_pos1 + step])
+                    current_pos1 = current_pos1 + step
+
 
                 # Check to see if we've already saved this sequence.
                 if data_type is "images":
                     # Get and resample frames.
-                    frames = self.get_frames_for_sample(sample)
-                    frames = self.rescale_list(frames, self.seq_length)
+                    #frames = self.get_frames_for_sample(sample)
+                    #frames = self.rescale_list(frames, self.seq_length)
 
                     # Build the image sequence
-                    sequence = self.build_image_sequence(frames)
+                    sequence = self.build_image_sequence(sample, chanel_3d)
+                    # switch chanel to last
+                    if chanel_3d:
+                        sequence = np.transpose(sequence, (1,2,0))
                 else:
                     # Get the sequence from disk.
                     sequence = self.get_extracted_sequence(data_type, sample)
@@ -188,13 +226,13 @@ class DataSet():
                         raise ValueError("Can't find sequence. Did you generate them?")
 
                 X.append(sequence)
-                y.append(self.get_class_one_hot(sample[1]))
+                y.append(self.get_class_one_hot(str(i % 2)))
 
             yield np.array(X), np.array(y)
 
-    def build_image_sequence(self, frames):
+    def build_image_sequence(self, frames, chanel_3d=False):
         """Given a set of frames (filenames), build our sequence."""
-        return [process_image(x, self.image_shape) for x in frames]
+        return [process_image(x, self.image_shape, chanel_3d) for x in frames]
 
     def get_extracted_sequence(self, data_type, sample):
         """Get the saved extracted features."""

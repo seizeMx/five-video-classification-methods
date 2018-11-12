@@ -12,8 +12,7 @@ def train(data_type, seq_length, model, saved_model=None,
           load_to_memory=False, batch_size=32, nb_epoch=100):
     # Helper: Save the model.
     checkpointer = ModelCheckpoint(
-        filepath=os.path.join('data', 'checkpoints', model + '-' + data_type + \
-            '.{epoch:03d}-{val_loss:.3f}.hdf5'),
+        filepath=os.path.join('data', 'checkpoints', model + '-' + data_type + '.{epoch:03d}-{val_loss:.3f}.hdf5'),
         verbose=1,
         save_best_only=True)
 
@@ -21,12 +20,11 @@ def train(data_type, seq_length, model, saved_model=None,
     tb = TensorBoard(log_dir=os.path.join('data', 'logs', model))
 
     # Helper: Stop when we stop learning.
-    early_stopper = EarlyStopping(patience=5)
+    early_stopper = EarlyStopping(patience=50)
 
     # Helper: Save results.
     timestamp = time.time()
-    csv_logger = CSVLogger(os.path.join('data', 'logs', model + '-' + 'training-' + \
-        str(timestamp) + '.log'))
+    csv_logger = CSVLogger(os.path.join('data', 'logs', model + '-' + 'training-' + str(timestamp) + '.log'))
 
     # Get the data and process it.
     if image_shape is None:
@@ -43,7 +41,7 @@ def train(data_type, seq_length, model, saved_model=None,
 
     # Get samples per epoch.
     # Multiply by 0.7 to attempt to guess how much of data.data is the train set.
-    steps_per_epoch = (len(data.data) * 0.7) // batch_size
+    steps_per_epoch = (len(data.data['0_train']) * 2 / 16) // batch_size
 
     if load_to_memory:
         # Get data.
@@ -84,10 +82,10 @@ def main():
     """These are the main training settings. Set each before running
     this file."""
     # model can be one of lstm, lrcn, mlp, conv_3d, c3d
-    model = 'lstm'
+    model = '3d_in_c'
     saved_model = None  # None or weights file
     class_limit = None  # int, can be 1-101 or None
-    seq_length = 40
+    seq_length = 16
     load_to_memory = False  # pre-load the sequences into memory
     batch_size = 32
     nb_epoch = 1000
@@ -99,6 +97,9 @@ def main():
     elif model in ['lstm', 'mlp']:
         data_type = 'features'
         image_shape = None
+    elif model in ['3d_in_c']:
+        data_type = 'images'
+        image_shape = (32, 32, seq_length)
     else:
         raise ValueError("Invalid model. See train.py for options.")
 
