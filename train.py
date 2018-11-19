@@ -14,7 +14,7 @@ def train(data_type, seq_length, model, saved_model=None,
     checkpointer = ModelCheckpoint(
         filepath=os.path.join('data', 'checkpoints', model + '-' + data_type + '.{epoch:03d}-{val_loss:.3f}.hdf5'),
         verbose=1,
-        save_best_only=True)
+        save_best_only=False)
 
     # Helper: TensorBoard
     tb = TensorBoard(log_dir=os.path.join('data', 'logs', model))
@@ -41,8 +41,8 @@ def train(data_type, seq_length, model, saved_model=None,
 
     # Get samples per epoch.
     # Multiply by 0.7 to attempt to guess how much of data.data is the train set.
-    steps_per_epoch = (len(data.data['0_train']) * 2 / 16) // batch_size
-
+    steps_per_epoch = (len(data.data['0_train'])) * 2 // batch_size
+    print('steps_per_epoch ', steps_per_epoch)
     if load_to_memory:
         # Get data.
         X, y = data.get_all_sequences_in_memory('train', data_type)
@@ -53,7 +53,8 @@ def train(data_type, seq_length, model, saved_model=None,
         val_generator = data.frame_generator(batch_size, 'test', data_type)
 
     # Get the model.
-    rm = ResearchModels(len(data.classes), model, seq_length, saved_model)
+    # use saved_model as weights
+    rm = ResearchModels(len(data.classes), model, seq_length, saved_weights=saved_model)
 
     # Fit!
     if load_to_memory:
@@ -75,19 +76,18 @@ def train(data_type, seq_length, model, saved_model=None,
             verbose=1,
             callbacks=[tb, early_stopper, csv_logger, checkpointer],
             validation_data=val_generator,
-            validation_steps=40,
-            workers=4)
+            validation_steps=((len(data.data['0_test'])) * 2 // batch_size),
+            workers=32)
 
-def main():
+def main(saved_model):
     """These are the main training settings. Set each before running
     this file."""
     # model can be one of lstm, lrcn, mlp, conv_3d, c3d
     model = '3d_in_c'
-    saved_model = None  # None or weights file
     class_limit = None  # int, can be 1-101 or None
     seq_length = 16
     load_to_memory = False  # pre-load the sequences into memory
-    batch_size = 32
+    batch_size = 256
     nb_epoch = 1000
 
     # Chose images or features and image shape based on network.
@@ -108,4 +108,6 @@ def main():
           load_to_memory=load_to_memory, batch_size=batch_size, nb_epoch=nb_epoch)
 
 if __name__ == '__main__':
-    main()
+    saved_model = 'data'+os.sep+'checkpoints-bak'+os.sep+'3d_in_c-images.002-0.094.hdf5'  # None or weights file  'data/checkpoints/3d_in_c-images.002-0.040.hdf5'
+    #saved_model = 'data'+os.sep+'checkpoints-bak'+os.sep+'3d_in_c-images.001-0.433.hdf5'  # None or weights file  'data/checkpoints/3d_in_c-images.002-0.040.hdf5'
+    main(saved_model)

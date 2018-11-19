@@ -33,11 +33,11 @@ def locate(filePath, frame_num, length_frame):
 
 
 # Function to extract frames
-def FrameCapture(filePath, targetPath, strides=1, synthesisNum=25, func=2, size=(32, 32)):
-    filePathList = filePath.split("\\")
+def FrameCapture(filePath, targetPath, func=2, size=(32, 32)):
+    filePathList = filePath.split(os.sep)
     fileName = filePathList[-1]
-    basePathSource = filePath.replace("\\" + fileName, "")
-    fileName = basePathSource.split("\\")[-1] + "_" + fileName
+    basePathSource = filePath.replace(os.sep + fileName, "")
+    fileName = basePathSource.split(os.sep)[-1] + "_" + fileName
 
     file_name_list = {'0': [], '1': []}
 
@@ -177,15 +177,14 @@ def FrameCapture(filePath, targetPath, strides=1, synthesisNum=25, func=2, size=
             if success:
                 if str(frame_num) in speak_list or frame_num in speak_list:
                     save_path = "1"
-                    file_name_list['1'].append(targetPath + "\\" + save_path + "\\" + ("%06d.jpg" % frame_num) + "\n")
+                    file_name_list['1'].append(targetPath + os.sep + save_path + os.sep + ("%06d.jpg" % frame_num) + "\n")
                 else:
                     save_path = "0"
-                    file_name_list['0'].append(targetPath + "\\" + save_path + "\\" + ("%06d.jpg" % frame_num) + "\n")
+                    file_name_list['0'].append(targetPath + os.sep + save_path + os.sep + ("%06d.jpg" % frame_num) + "\n")
 
-                if False:
-                    annotations = getAnnotations(basePathSource, frame_num)
-                    image = frameCropResize(annotations, image, size)
-                    cv2.imwrite(os.path.join(targetPath, save_path, "%06d.jpg" % frame_num), image)
+                annotations = getAnnotations(basePathSource, frame_num)
+                image = frameCropResize(annotations, image, size)
+                cv2.imwrite(os.path.join(targetPath, save_path, "%06d.jpg" % frame_num), image)
 
                 # if frame_num % synthesisNum == 0:
                 #     groupPic.append(image)
@@ -248,7 +247,7 @@ def mark_to_file(basePathSource, frame_num, silence_frames):
     # f.write("speak" + (str(sorted(frame_set_speak))) + "\n")
     # f.write("silence" + (str(sorted(frame_set_silence))))
 
-    f = open(basePathSource + "//classify_frames.txt", "w")
+    f = open(os.path.join(basePathSource, "classify_frames.txt"), "w")
     f.write("speak" + (str(speak_frames)) + "\n")
     f.write("silence" + (str(silence_frames)))
     f.close()
@@ -266,7 +265,7 @@ def frameCropResize(annotations, image, size):
 
 def getAnnotations(basePathSource, frame, func=3, func_ref=lambda x: x):
     result = []
-    with open(basePathSource + (r"\annot\%06d.pts" % frame)) as pts:
+    with open(os.path.join(basePathSource, "annot", "%06d.pts" % frame)) as pts:
         annotations = pts.readlines()
     annotations = annotations[3:71]
     if func == 3:
@@ -291,7 +290,7 @@ def expand_range2seq(pair_str_list, splitor):
 def getLabled(basePathSource):
     speak_list = []
     silence_list = []
-    with open(basePathSource + r"\classify_frames.txt") as labeledFile:
+    with open(os.path.join(basePathSource, "classify_frames.txt")) as labeledFile:
         labels = labeledFile.readlines()
 
     for label in labels:
@@ -341,40 +340,44 @@ def findZone(annotations):
 if __name__ == '__main__':
     # Calling the function
     # mark, crop, resize, synthesis
-    targetPath = r"d:\datasetConvert"
+    # targetPath = r"d:\datasetConvert"
+    # pathV = r"D:\dataset\300VW_Dataset_2015_12_14"
+    # targetPath = r"./"
+    targetPath = r"/home/sylar/workspace/five-video-classification-methods/data"
+    pathV = r"/home/sylar/dataset"
 
-    pathV = r"D:\dataset\300VW_Dataset_2015_12_14"
     nameV = "*.avi"
     flag = 1
 
     file_0 = []
     file_1 = []
-    f_train_0 = open(os.path.join(targetPath, "300VW_Dataset_2015_12_14\\0_train.txt"), "w")
-    f_train_1 = open(os.path.join(targetPath, "300VW_Dataset_2015_12_14\\1_train.txt"), "w")
-    f_test_0 = open(os.path.join(targetPath, "300VW_Dataset_2015_12_14\\0_test.txt"), "w")
-    f_test_1 = open(os.path.join(targetPath, "300VW_Dataset_2015_12_14\\1_test.txt"), "w")
+    f_train_0 = open(os.path.join(targetPath, "0_train.txt"), "w")
+    f_train_1 = open(os.path.join(targetPath, "1_train.txt"), "w")
+    f_test_0 = open(os.path.join(targetPath, "0_test.txt"), "w")
+    f_test_1 = open(os.path.join(targetPath, "1_test.txt"), "w")
 
-    for imagename in glob.glob(os.path.join(pathV + r"\*", nameV)):
-        if (1 == 2 and imagename == 'D:\\dataset\\300VW_Dataset_2015_12_14\\057\\vid.avi'):
-            flag = 1
+    for imagename in glob.glob(os.path.join(pathV, "*", nameV)):
+        # if (1 == 2 and imagename == 'D:\\dataset\\300VW_Dataset_2015_12_14\\057\\vid.avi'):
+        #     flag = 1r
 
-        if (1 == 1 and imagename == 'D:\\dataset\\300VW_Dataset_2015_12_14\\126\\vid.avi'):
+        if 1 == 1 and '126' in imagename.split(os.sep):
             flag = 0
-            break
 
         # try:
         if flag == 1:
-            file_0_part, file_1_part = FrameCapture(imagename, targetPath,
-                                                    func=2)  # (r"D:\dataset\300VW_Dataset_2015_12_14\001\vid.avi")
+            file_0_part, file_1_part = FrameCapture(imagename, targetPath, func=2)
+            # (r"D:\dataset\300VW_Dataset_2015_12_14\001\vid.avi")
             file_0.extend(file_0_part)
             file_1.extend(file_1_part)
 
-    num = min(len(file_0), len(file_1))
+    # num = min(len(file_0), len(file_1))
+    num0 = len(file_0)
+    num1 = len(file_1)
 
-    f_train_0.writelines(file_0[:int(0.7 * num)])
-    f_train_1.writelines(file_1[:int(0.7 * num)])
-    f_test_0.writelines(file_0[int(0.7 * num):num])
-    f_test_1.writelines(file_1[int(0.7 * num):num])
+    f_train_0.writelines(file_0[:int(0.7 * num0)])
+    f_train_1.writelines(file_1[:int(0.7 * num1)])
+    f_test_0.writelines(file_0[int(0.7 * num0):num0])
+    f_test_1.writelines(file_1[int(0.7 * num1):num1])
 
     print('summary_sp {}, summary_sl {}, ALL {}'.format(len(file_1), len(file_0), len(file_1) + len(file_0)))
     f_train_0.close()

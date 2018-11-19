@@ -160,7 +160,7 @@ class DataSet():
         return np.array(X), np.array(y)
 
     @threadsafe_generator
-    def frame_generator(self, batch_size, train_test, data_type):
+    def frame_generator(self, batch_size, train_test, data_type, shuffle=True):
         """Return a generator that we can use to train on. There are
         a couple different things we can return:
 
@@ -170,7 +170,6 @@ class DataSet():
         #train, test = self.split_train_test()
 
         chanel_3d = False if self.image_shape[2] == 3 else True
-        #TODO try shuffle
         data = dict()
         if train_test == 'train':
             data['0'] = self.data['0_train'].copy()
@@ -181,6 +180,7 @@ class DataSet():
 
         print("Creating %s generator with %d samples." % (train_test, len(data['0'])+len(data['1'])))
 
+        type_0 = 0
         current_pos0 = 0
         current_pos1 = 0
         step = 16
@@ -193,19 +193,24 @@ class DataSet():
                 sequence = None
                 sample = []
 
-                if len(data['0']) < current_pos0 + step or len(data['1']) < current_pos1 + step:
+
+                if len(data['0']) < current_pos0 + step:
                     current_pos0 = 0
+                    #type_0 += 1
+                if len(data['1']) < current_pos1 + step:
                     current_pos1 = 0
 
                 # Get a random sample.
 
                 if i % 2 == 0:
                     sample.extend(data['0'][current_pos0:current_pos0 + step])
-                    current_pos0 = current_pos0 + step
+                    current_pos0 = current_pos0 + 1
                 else:
                     sample.extend(data['1'][current_pos1:current_pos1 + step])
-                    current_pos1 = current_pos1 + step
+                    current_pos1 = current_pos1 + 1
 
+                if shuffle: # and random.randint(0, 1):
+                    random.shuffle(sample)
 
                 # Check to see if we've already saved this sequence.
                 if data_type is "images":
@@ -214,7 +219,7 @@ class DataSet():
                     #frames = self.rescale_list(frames, self.seq_length)
 
                     # Build the image sequence
-                    sequence = self.build_image_sequence(sample, chanel_3d)
+                    sequence = self.build_image_sequence(sample, chanel_3d, type_0%4)
                     # switch chanel to last
                     if chanel_3d:
                         sequence = np.transpose(sequence, (1,2,0))
@@ -230,9 +235,38 @@ class DataSet():
 
             yield np.array(X), np.array(y)
 
-    def build_image_sequence(self, frames, chanel_3d=False):
+    def build_image_sequence(self, frames, chanel_3d=False, type_0=0):
         """Given a set of frames (filenames), build our sequence."""
-        return [process_image(x, self.image_shape, chanel_3d) for x in frames]
+        result = []
+
+        if type_0 in (0, 1, 2):
+            result = [process_image(x, self.image_shape, chanel_3d, type_0) for x in frames]
+        elif type_0 >= 3:
+            j = random.randint(0, 15)
+            img = process_image(frames[j], self.image_shape, chanel_3d, 0)
+            result.append(img)
+            result.append(img)
+            result.append(img)
+            result.append(img)
+            result.append(img)
+            j = random.randint(0, 15)
+            img = process_image(frames[j], self.image_shape, chanel_3d, 0)
+            result.append(img)
+            result.append(img)
+            result.append(img)
+            result.append(img)
+            result.append(img)
+            result.append(img)
+            j = random.randint(0, 15)
+            img = process_image(frames[j], self.image_shape, chanel_3d, 0)
+            result.append(img)
+            result.append(img)
+            result.append(img)
+            result.append(img)
+            result.append(img)
+
+        return result
+
 
     def get_extracted_sequence(self, data_type, sample):
         """Get the saved extracted features."""
