@@ -12,15 +12,15 @@ def train(data_type, seq_length, model, saved_model=None,
           load_to_memory=False, batch_size=32, nb_epoch=100):
     # Helper: Save the model.
     checkpointer = ModelCheckpoint(
-        filepath=os.path.join('data', 'checkpoints', model + '-' + data_type + '.{epoch:03d}-{val_loss:.3f}.hdf5'),
+        filepath=os.path.join('data', 'checkpoints', model + '-' + data_type + '.{epoch:03d}-{val_acc:.3f}-{val_loss:.3f}.hdf5'),
         verbose=1,
-        save_best_only=False)
+        save_best_only=True)
 
     # Helper: TensorBoard
     tb = TensorBoard(log_dir=os.path.join('data', 'logs', model))
 
     # Helper: Stop when we stop learning.
-    early_stopper = EarlyStopping(patience=50)
+    early_stopper = EarlyStopping(patience=10)
 
     # Helper: Save results.
     timestamp = time.time()
@@ -87,7 +87,7 @@ def main(saved_model):
     class_limit = None  # int, can be 1-101 or None
     seq_length = 16
     load_to_memory = False  # pre-load the sequences into memory
-    batch_size = 256
+    batch_size = 64
     nb_epoch = 1000
 
     # Chose images or features and image shape based on network.
@@ -108,6 +108,7 @@ def main(saved_model):
           load_to_memory=load_to_memory, batch_size=batch_size, nb_epoch=nb_epoch)
 
 if __name__ == '__main__':
-    saved_model = 'data'+os.sep+'checkpoints-bak'+os.sep+'3d_in_c-images.002-0.094.hdf5'  # None or weights file  'data/checkpoints/3d_in_c-images.002-0.040.hdf5'
+    #saved_model = 'data'+os.sep+'checkpoints'+os.sep+'3d_in_c-images.001-21.532.hdf5'  # None or weights file  'data/checkpoints/3d_in_c-images.002-0.040.hdf5'
     #saved_model = 'data'+os.sep+'checkpoints-bak'+os.sep+'3d_in_c-images.001-0.433.hdf5'  # None or weights file  'data/checkpoints/3d_in_c-images.002-0.040.hdf5'
+    saved_model = None
     main(saved_model)
