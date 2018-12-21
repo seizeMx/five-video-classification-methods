@@ -28,17 +28,20 @@ def process_image(image, target_shape, chanel_3d=False, type_0=0):
     image = load_img(image[0], target_size=(h, w))
     img_arr = img_to_array(image)
 
-    center = (h / 2, w / 2)
-    a = 5
-
-    if type_0 == 1:
-        img_arr = cv2.flip(img_arr, 1)
-    elif type_0 == 2:
-        img_arr = rotate(img_arr, random.uniform(-a, a), center, w, h)[:32, :32, :]
+    # center = (h / 2, w / 2)
+    # a = 5
+    # if type_0 == 1:
+    #     img_arr = cv2.flip(img_arr, 1)
+    # elif type_0 == 2:
+    #     img_arr = rotate(img_arr, random.uniform(-a, a), center, w, h)[:32, :32, :]
     # Turn it into numpy, normalize and return.
     if chanel_3d:
-        # TODO YUV
-        x = (img_arr[:, :, 1] / 255.).astype(np.float32)
+        # YUV
+
+        img_yuv = cv2.cvtColor(img_arr, cv2.COLOR_RGB2YUV)
+        y, u, v = cv2.split(img_yuv)
+
+        x = (y / 255.).astype(np.float32)
     else:
         x = (img_arr / 255.).astype(np.float32)
 
