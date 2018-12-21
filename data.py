@@ -160,11 +160,13 @@ class DataSet():
         return np.array(X), np.array(y)
 
     @threadsafe_generator
-    def frame_generator(self, batch_size, train_test, data_type, shuffle=True):
+    def frame_generator(self, batch_size, train_test, data_type, shuffle=False, stride=2):
         """Return a generator that we can use to train on. There are
         a couple different things we can return:
 
         data_type: 'features', 'images'
+
+        stride: skip frame
         """
         # Get the right dataset for the generator.
         #train, test = self.split_train_test()
@@ -194,19 +196,19 @@ class DataSet():
                 sample = []
 
 
-                if len(data['0']) < current_pos0 + step:
+                if len(data['0']) < current_pos0 + step*stride + 1:
                     current_pos0 = 0
                     #type_0 += 1
-                if len(data['1']) < current_pos1 + step:
+                if len(data['1']) < current_pos1 + step*stride + 1:
                     current_pos1 = 0
 
                 # Get a random sample.
 
                 if i % 2 == 0:
-                    sample.extend(data['0'][current_pos0:current_pos0 + step])
+                    sample.extend(data['0'][current_pos0:current_pos0 + step*stride: stride])
                     current_pos0 = current_pos0 + 1
                 else:
-                    sample.extend(data['1'][current_pos1:current_pos1 + step])
+                    sample.extend(data['1'][current_pos1:current_pos1 + step*stride: stride])
                     current_pos1 = current_pos1 + 1
 
                 if shuffle: # and random.randint(0, 1):
@@ -237,33 +239,34 @@ class DataSet():
 
     def build_image_sequence(self, frames, chanel_3d=False, type_0=0):
         """Given a set of frames (filenames), build our sequence."""
-        result = []
 
-        if type_0 in (0, 1, 2):
-            result = [process_image(x, self.image_shape, chanel_3d, type_0) for x in frames]
-        elif type_0 >= 3:
-            j = random.randint(0, 15)
-            img = process_image(frames[j], self.image_shape, chanel_3d, 0)
-            result.append(img)
-            result.append(img)
-            result.append(img)
-            result.append(img)
-            result.append(img)
-            j = random.randint(0, 15)
-            img = process_image(frames[j], self.image_shape, chanel_3d, 0)
-            result.append(img)
-            result.append(img)
-            result.append(img)
-            result.append(img)
-            result.append(img)
-            result.append(img)
-            j = random.randint(0, 15)
-            img = process_image(frames[j], self.image_shape, chanel_3d, 0)
-            result.append(img)
-            result.append(img)
-            result.append(img)
-            result.append(img)
-            result.append(img)
+        result = [process_image(x, self.image_shape, chanel_3d, type_0) for x in frames]
+        # result = []
+        # if type_0 in (0, 1, 2):
+        #     result = [process_image(x, self.image_shape, chanel_3d, type_0) for x in frames]
+        # elif type_0 >= 3:
+        #     j = random.randint(0, 15)
+        #     img = process_image(frames[j], self.image_shape, chanel_3d, 0)
+        #     result.append(img)
+        #     result.append(img)
+        #     result.append(img)
+        #     result.append(img)
+        #     result.append(img)
+        #     j = random.randint(0, 15)
+        #     img = process_image(frames[j], self.image_shape, chanel_3d, 0)
+        #     result.append(img)
+        #     result.append(img)
+        #     result.append(img)
+        #     result.append(img)
+        #     result.append(img)
+        #     result.append(img)
+        #     j = random.randint(0, 15)
+        #     img = process_image(frames[j], self.image_shape, chanel_3d, 0)
+        #     result.append(img)
+        #     result.append(img)
+        #     result.append(img)
+        #     result.append(img)
+        #     result.append(img)
 
         return result
 
