@@ -3,8 +3,9 @@ import time
 import random
 
 from keras import Sequential
+from keras.models import Model
 from keras.callbacks import ModelCheckpoint, TensorBoard, EarlyStopping, CSVLogger
-from keras.layers import Dense, Dropout
+from keras.layers import Input, Dense, Dropout
 from keras.optimizers import Adam
 
 import tensorflow as tf
@@ -23,10 +24,11 @@ def process(x, k0, k1, k2):
     # if choice > 0.8:
     #     return k3 * (x + random.randint(-1080, 1080)) ** 3 + k0 * random.randint(-1920, 1920)
     # el
-    if choice > 0.2:
+    if choice > 0.1:
         return k1 * x + k2 * (x + random.randint(-1920, 1920)) ** 2 + k0 * random.randint(-1080, 1080)
     else:
         return k1 * (x + random.randint(-1920, 1920)) + k0 * random.randint(-1080, 1080)
+
 
 # def getY(x, k0, k1, k2, k3, k4, k5):
 #     return k0 + k1 * (x + k0) + k2 * (x + k0) ** 2 + k3 * (x + k0) ** 3 + k4 * (x + k0) ** 4 + k5 * (x + k0) ** 5
@@ -42,6 +44,7 @@ def frame_generator(batch_size, withMax=False):
     """
     # Get the right dataset for the generator.
     # train, test = self.split_train_test()
+    temp_max = 1
     while 1:
         b_tensor_input = np.zeros((batch_size, 10, 10, 2))
 
@@ -49,22 +52,33 @@ def frame_generator(batch_size, withMax=False):
         for b in range(0, batch_size):
 
             for person_i in range(0, 10):
-                k0 = random.random()*(-1 if random.randint(0, 1) == 0 else 1)
-                k1 = random.random()*(-1 if random.randint(0, 1) == 0 else 1)
-                k2 = random.random()*(-1 if random.randint(0, 1) == 0 else 1)
+                k0 = random.random() * (-1 if random.randint(0, 1) == 0 else 1)
+                k1 = random.random() * (-1 if random.randint(0, 1) == 0 else 1)
+                k2 = random.random() * (-1 if random.randint(0, 1) == 0 else 1)
 
                 # x = np.random.rand(10)
                 # rangeLen = random.randint(50, 1920-1)
                 # x = np.random.rand(10) * rangeLen + np.random.randint(0, 1920 - rangeLen)
-                x = np.random.rand(10) * np.random.randint(1079, 1080)
+                # x = np.random.rand(10) * np.random.randint(100, 1080)
+                p1_start = np.random.randint(0, 150)
+                p1_stop = np.random.randint(p1_start, 1080-1)
+                x = np.arange(p1_start, p1_stop, (p1_stop - p1_start) / 10)
+
                 x.sort()
                 y = process(x, k0, k1, k2)
 
                 # Normalize
                 # t_min = min(x.min(), y.min())
                 # t_max = max(x.max(), y.max())
-                # x = (x-x.min())/(x.max()-x.min())
-                # y = (y-y.min())/(y.max()-y.min())
+
+                x = (x) / (x.max()+1)
+                if y.min() < 0:
+                    y_minus = y.min() - (y.max() - y.min()) * np.random.rand()
+                else:
+                    y_minus = y.min() - y.min() * np.random.rand()
+
+                # y_minus = np.random.randint(min(y.min(), y_minus), max(y.min(), y_minus))
+                y = (y - y_minus) / (y.max() - y_minus+1)
                 #
                 # b_temp
 
@@ -81,9 +95,9 @@ def frame_generator(batch_size, withMax=False):
         # temp_max = b_xy_lable.max()-temp_min
         # b_xy_lable = (b_xy_lable-temp_min)/temp_max
         # b_tensor_input = (b_tensor_input-temp_min)/temp_max
-        temp_max = b_xy_lable.max()
-        b_xy_lable = b_xy_lable / temp_max
-        b_tensor_input = b_tensor_input / temp_max
+        # temp_max = b_xy_lable.max()
+        # b_xy_lable = b_xy_lable / temp_max
+        # b_tensor_input = b_tensor_input / temp_max
         if withMax:
             yield b_tensor_input.swapaxes(1, 2).reshape((b + 1, 200)), b_xy_lable.reshape((b + 1, 200)), temp_max
         else:
@@ -93,7 +107,23 @@ def frame_generator(batch_size, withMax=False):
 def dnn(saved_weights=None):
     # act = keras.layers.advanced_activations.PReLU(init='zero', weights=None)
 
-    model = Sequential()
+    # input = Input(shape=(200,))
+    #
+    # x = Dense(200)(input)
+    # x = LeakyReLU(alpha=0.01)(x)
+    # x = Dense(1200)(x)
+    # x = LeakyReLU(alpha=0.01)(x)
+    #
+    # p0 = Dense(11, activation='softmax')(x)
+    # p1 = Dense(11, activation='softmax')(x)
+    # p2 = Dense(11, activation='softmax')(x)
+    # p3 = Dense(11, activation='softmax')(x)
+    # p4 = Dense(11, activation='softmax')(x)
+    # p5 = Dense(11, activation='softmax')(x)
+    # p6 = Dense(11, activation='softmax')(x)
+    # p7 = Dense(11, activation='softmax')(x)
+    # p8 = Dense(11, activation='softmax')(x)
+    # p9 = Dense(11, activation='softmax')(x)
 
     # 1 Total params: 200,800
     # model.add(Dense(200, activation='relu', input_shape=(200,)))
@@ -102,6 +132,7 @@ def dnn(saved_weights=None):
     # model.add(Dense(200, activation='relu'))
 
     # 2 Total params: 281,000
+    model = Sequential()
     model.add(Dense(200, input_shape=(200,)))
     model.add(LeakyReLU(alpha=0.01))
     model.add(Dense(1200))
@@ -121,7 +152,6 @@ def dnn(saved_weights=None):
     # model.add(Dense(600))
     # model.add(LeakyReLU(alpha=0.01))
     # model.add(Dense(200))
-
 
     if saved_weights is not None:
         print('load weights ', saved_weights)

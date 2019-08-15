@@ -7,8 +7,8 @@ import tensorflow as tf
 
 
 def check():
-    x_scale = 1 #max_len
-    y_scale = 1 #max_len
+    x_scale = 1920 #max_len
+    y_scale = 1080 #max_len
     while 1:
         # model = load_model('data/checkpoints/dnn-gen5-4layer-200-400-400-200-.001-0.915-14.373.hdf5', custom_objects={'huber_loss': tf.losses.huber_loss})
         batch_size = 1
