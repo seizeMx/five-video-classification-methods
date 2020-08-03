@@ -10,16 +10,16 @@ def check():
     x_scale = 1920 #max_len
     y_scale = 1080 #max_len
     while 1:
-        # model = load_model('data/checkpoints/dnn-gen5-4layer-200-400-400-200-.001-0.915-14.373.hdf5', custom_objects={'huber_loss': tf.losses.huber_loss})
+        model = load_model('data/checkpoints/dnn-fix-layer-200-600-200.001-0.087-0.004.hdf5', custom_objects={'huber_loss': tf.losses.huber_loss})
         batch_size = 1
         datas = next(frame_generator(batch_size, True))
         max_len = datas[2]
         # inputs = datas[0]
         # lables = datas[1]
-        inputs = datas[0]*max_len
-        lables = datas[1]*max_len
+        inputs = datas[0]#*max_len
+        lables = datas[1]#*max_len
 
-        # predictions = model.predict(inputs)
+        predictions = model.predict(inputs)
 
         # max_len = max(predictions.max(), inputs.max())
         # min_len = min(predictions.min(), inputs.min())
@@ -35,8 +35,8 @@ def check():
             # x_hat = a[1][0][i:i+10]
             # y_hat = a[1][0][i+10:i+20]
             # plt.plot(x_hat, y_hat, color=(random.random(),random.random(),random.random()), lw=lw, label='y_hat')  #'navy'
-            # plt.xlim([0.0, x_scale])
-            # plt.ylim([0.0, y_scale])
+            plt.xlim([0.0, x_scale])
+            plt.ylim([0.0, y_scale])
             # plt.xlabel('False Positive Rate')
             # plt.ylabel('True Positive Rate')
             plt.title('input')
@@ -52,12 +52,33 @@ def check():
             y_hat = lables[0][i + 10:i + 20] * y_scale
             plt.plot(x_hat, y_hat, 'ko--', color=(random.random(), random.random(), random.random()), lw=lw, label='lable_%d'%i)  # 'navy'
 
-            # x_hat = predictions[0][i:i + 10]
-            # y_hat = predictions[0][i + 10:i + 20]
-            # plt.plot(x_hat, y_hat, 'ko--', color='darkorange', lw=lw, label='y_hat')  #
+            # x_hat = predictions[0][i:i + 10] * x_scale
+            # y_hat = predictions[0][i + 10:i + 20] * y_scale
+            # plt.plot(x_hat, y_hat, color='navy', lw=lw, label='y_hat')  #'darkorange'
 
-            # plt.xlim([0.0, x_scale])
-            # plt.ylim([0.0, y_scale])
+            plt.xlim([0.0, x_scale])
+            plt.ylim([0.0, y_scale])
+            # # plt.xlabel('False Positive Rate')
+            # plt.ylabel('True Positive Rate')
+            plt.title('y_lable')
+            plt.legend(loc="lower right")
+        plt.show()
+
+        for i in range(0, inputs.shape[1], 20):
+            # x = a[0][0][i:i+10]
+            # y = a[0][0][i+10:i+20]
+            # plt.plot(x, y, color=(random.random(),random.random(),random.random()), lw=lw, label='y')  #'darkorange'
+
+            x_hat = lables[0][i:i + 10] * x_scale
+            y_hat = lables[0][i + 10:i + 20] * y_scale
+            plt.plot(x_hat, y_hat, 'ko--', color='darkorange', lw=lw, label='lable_%d'%i)  # 'navy' (random.random(), random.random(), random.random())
+
+            x_hat = predictions[0][i:i + 10] * x_scale
+            y_hat = predictions[0][i + 10:i + 20] * y_scale
+            plt.plot(x_hat, y_hat, 'ko--', color='navy', lw=lw, label='y_hat')  #
+
+            plt.xlim([0.0, x_scale])
+            plt.ylim([0.0, y_scale])
             # # plt.xlabel('False Positive Rate')
             # plt.ylabel('True Positive Rate')
             plt.title('y_lable')
